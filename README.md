@@ -4,7 +4,7 @@ First webapp task. Target is to create a blog with some useful tools.
 ## project structure
 	webapp/					<-- root index
 	|
-	+- transwarp				<-- extra folder to store web frame modules
+	+- transwarp/			<-- extra folder to store web frame modules
 	|
 	+- backup/				<-- backup index
 	|
