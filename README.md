@@ -2,21 +2,21 @@
 First webapp task. Target is to create a blog with some useful tools.
 
 ## project structure
-	webapp/					<-- root index
+	webapp/					<-- root index 
 	|
-	+- transwarp/			<-- extra folder to store web frame modules
+	+- backup/				<-- backup index 
 	|
-	+- backup/				<-- backup index
-	|
-	+- conf/				<-- configuration file
+	+- conf/				<-- configuration file 
 	|
 	+- dist/				<-- package index
 	|
-	+- www/					<-- web index, file to store .py files
+	+- www/					<-- web index, file to store .py files 
 	|  |
-	|  +- static/			<-- file to store static files
+	|  +- static/			<-- file to store static files 
 	|  |
-	|  +- templates/		<-- file to store templates
+	|  +- templates/		<-- file to store templates 
+	|  |
+	|  +- transwarp/		<-- extra folder to store web frame modules 
 	|
 	+- LICENSE				<-- code LICENSE
   
