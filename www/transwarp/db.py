@@ -7,6 +7,10 @@ Database operation module.
 
 import time, uuid, functools, treading, logging
 
+
+
+
+
 class Dict(dict):
 	'''
 	Simple dict but support access as x.y style
@@ -36,13 +40,20 @@ class Dict(dict):
 	2
 	>>> d3.c
 	3
-	
 	'''
-	def __init__():
-		pass
+	def __init__(self, name=(), value=(), **kw):
+		super(Dict, self).__init__(**kw)
+		for k, v in zip(name, value)					# zip() func is to swap the row and column elements. return tuple in list.
+			self[k] = v									# Dict mapping
+			
+	def __getattr__(self, key):
+		try:
+			return self[key]
+		except KeyError:
+			raise AttributeError(r"'Dict' object has no attribute '%s'", % key)
 		
-	def __setattr__():
-		pass
+	def __setattr__(self, key, value):
+		self[key] = value
 	
 def next_id():
 	'''
@@ -51,7 +62,9 @@ def next_id():
 	Args:
 		t: unix timestamp, default to None and using time.time().
 	'''
-	pass
+	if t is None:
+		t = time.time()
+	return '%015d%s000' %(int(t * 1000), uuid.uuid4().hex)		# Arp-24
 	
 def _profiling():
 	pass
