@@ -66,8 +66,12 @@ def next_id():
 		t = time.time()
 	return '%015d%s000' %(int(t * 1000), uuid.uuid4().hex)		# Arp-24
 	
-def _profiling():
-	pass
+def _profiling(start, sql = ''):
+	t = time.time() - start
+	if t > 0.1:
+		logging.warning('[PROFILING] [DB] %s: %s' % (t, sql))
+	else:
+		logging.info('[PROFILING] [DB] %s: %s' % (t, sql))
 	
 class DBError(Exception):
 	pass
@@ -78,19 +82,27 @@ class MultiColumnsError(DBError):
 class _LasyConnection(object):
 	
 	def __init__(self):
-		pass
+		self.connection = None
 	
 	def cursor(self):
-		pass
+		if self.connection is None:
+			connection = engine.connect()
+			logging.info('open connection <%s>...' %hex(id(connection)))
+			self.connection = connection
+		return self.connection.cursor()
 		
 	def commit(self):
-		pass
+		self.connection.commit()
 		
 	def rollback(self):
-		pass
+		self.connection.rollback()
 		
 	def cleanup(self):
-		pass
+		if self.connection:
+			connection = self.connection
+			self.connection = None
+			logging.info('close connection <%s>...' %hex(id(connection)))
+			connection.close()
 		
 class _DbCtx(threading.lcoal):
 	'''
