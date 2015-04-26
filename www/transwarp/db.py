@@ -109,19 +109,26 @@ class _DbCtx(threading.lcoal):
 	Thread local object that holds connection info.
 	'''
 	def __init__(self):
-		pass
+		self.connection = None		#this class has 2 properties
+		self.transactions = 0
 		
-	def is_init(self):
-		pass
+	def is_init(self):				# return True if has not initialized
+		return not self.connection is None 
 		
-	def init(self):
-		pass
+	def init(self):					# initiate
+		logging.info('open lazy connection...')
+		self.connection = _LasyConnection()		# inherent from threading object
+		self.transactions = 0
 		
-	def cleanup(self):
-		pass
+	def cleanup(self):				# cleanup
+		self.connection.cleanup()
+		self.connection = None
 		
-	def cursor(self):
-		pass
+	def cursor(self):				# cursor
+		'''
+		return cursor
+		'''
+		return self.connection.cursor()
 		
 # thread-local db context:
 _db_ctx = _DbCtx()
@@ -129,16 +136,28 @@ _db_ctx = _DbCtx()
 # global engine object:
 engine = None
 
-class _Engine(object):
+class _Engine(object):				# inner object
 
-	def __init__():
-		pass
+	def __init__(self, connect):	
+		self._connect = connect		# 1 property 	
+				
+	def connect(self):				# 1 function return connect info 
+		return self._connect()
 		
-	def connect(self):
-		pass
-		
-def create_engine():
-	pass
+def create_engine(user, password, database, host = '127.0.0.1', port = 3306, **kw): # function to connect the database engine, raise info
+	import mysql.connector
+	global engine
+	if engine is not None:
+		raise DBError('Engine is already initialized.')
+	params = dict(user = user, password = password, database = database, host = host, port = port)
+	defaults = dict(use_unicode = True, charset = 'utf8', collation = 'utf8_general_ci', autocommit = False)
+	for k, v in defaults.iteritems():
+		params[k] = kw.pop(k, v)
+	params.update(kw)
+	params['buffered'] = True
+	engine = _Engine(lambda: mysql.connector.connect(**params))
+	#test connection...
+	logging.info('Init mysql engine<%s> ok.' % hex(id(engine)))
 	
 class _ConnectionCtx(object):
 	'''
