@@ -5,7 +5,7 @@
 Database operation module.
 '''
 
-import time, uuid, functools, treading, logging
+import time, uuid, functools, threading, logging
 
 
 
@@ -41,9 +41,9 @@ class Dict(dict):
 	>>> d3.c
 	3
 	'''
-	def __init__(self, name=(), value=(), **kw):
-		super(Dict, self).__init__(**kw)
-		for k, v in zip(name, value)					# zip() func is to swap the row and column elements. return tuple in list.
+    def __init__(self, name=(), value=(), **kw):
+        super(Dict, self).__init__(**kw)
+        for k, v in zip(name, value):					# zip() func is to swap the row and column elements. return tuple in list.
 			self[k] = v									# Dict mapping
 			
 	def __getattr__(self, key):
@@ -55,7 +55,7 @@ class Dict(dict):
 	def __setattr__(self, key, value):
 		self[key] = value
 	
-def next_id():
+def next_id(t = None):
 	'''
 	Return next id as 50-char string.
 	
@@ -104,7 +104,7 @@ class _LasyConnection(object):
 			logging.info('close connection <%s>...' %hex(id(connection)))
 			connection.close()
 		
-class _DbCtx(threading.lcoal):
+class _DbCtx(threading.local):
 	'''
 	Thread local object that holds connection info.
 	'''
@@ -159,7 +159,7 @@ def create_engine(user, password, database, host = '127.0.0.1', port = 3306, **k
 	#test connection...
 	logging.info('Init mysql engine<%s> ok.' % hex(id(engine)))
 	
-class _ConnectionCtx(object):
+class _ConnectionCtx(object):           # This class is for 'with' function
 	'''
 	_ConnectionCtx object that can open and close connection context. _ConnectionCtx object can be nested
 	and only the most outer connection has effect.
@@ -170,20 +170,28 @@ class _ConnectionCtx(object):
 			pass
 	'''
 	def __enter__(self):
-		pass
+		global _db_ctx
+        self.should_cleanup = False
+        if not _db_ctx.is_init():
+            _db_ctx.init()
+            self.should_cleanup = True
+        return self
 		
-	def __exit__():
+	def __exit__(self, exctype, excvalue, traceback):
+        global _db_ctx
+        if self.should_cleanup:
+            _db_ctx.cleanup()
 	
-def connection():
+def connection():       # return _ConnectionCtx object ??
 	'''
 	Return _ConnectionCtx object that can be used by 'with' statement:
 	
 	with connect():
 		pass
 	'''
-	pass
+	return _ConnectionCtx()         # why auto compile wrong
 	
-def with_connection(func):
+def with_connection(func):          # with_connection decorator
 	'''
 	Decorator for reuse connection.
 	
@@ -193,8 +201,13 @@ def with_connection(func):
 		f2()
 		f3()
 	'''
+    @functools.wraps(func)          # use the decorator from functools
+    def _wrapper(*args, **kw):
+        with _ConnectionCtx():
+            return func(*args, **kw)
+    return _wrapper
 	
-class _TransactionCtx(object):
+class _TransactionCtx(object):    # somehow if class with __enter__ and __exit__ maybe means could use 'with' function
 	'''
 	_TransactionCtx object that can handle transactions.
 	
@@ -203,7 +216,15 @@ class _TransactionCtx(object):
 	'''
 	
 	def __enter__(self):
-		pass
+		global _db_ctx
+        self.should_close_conn = False
+        if not _db_ctx.is_init():
+            # open a connection first
+            _db_ctx.init()
+            self.should_close_conn = True
+        _db_ctx.transactions = _db_ctx.transactions + 1
+        logging.info('begin transaction...' if _db_ctx.transactions == 1 else 'join current transaction...')
+        return self
 		
 	def __exit__(self):
 		pass
